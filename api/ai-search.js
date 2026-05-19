@@ -6,25 +6,47 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    console.log(`[AI Search] Received ${req.method} request`);
+
     if (req.method === 'OPTIONS') {
+        console.log('[AI Search] Handling OPTIONS preflight');
         return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        console.log(`[AI Search] Rejected ${req.method} request - only POST allowed`);
+        return res.status(405).json({ error: 'Method not allowed', method: req.method });
     }
 
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
     if (!GROQ_API_KEY) {
+        console.error('[AI Search] Missing GROQ_API_KEY environment variable');
         return res.status(500).json({ error: 'Missing GROQ_API_KEY environment variable' });
     }
 
     try {
-        const { query, items } = req.body;
+        // Parse body if it's a string (some serverless platforms don't auto-parse)
+        let body = req.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch (e) {
+                console.error('[AI Search] Failed to parse request body:', e);
+                return res.status(400).json({ error: 'Invalid JSON in request body' });
+            }
+        }
 
-        if (!query || !items || !Array.isArray(items)) {
-            return res.status(400).json({ error: 'Missing query or items in request body' });
+        const { query, items } = body || {};
+
+        console.log(`[AI Search] Query: "${query}", Items count: ${items?.length || 0}`);
+
+        if (!query || typeof query !== 'string') {
+            return res.status(400).json({ error: 'Missing or invalid query in request body' });
+        }
+
+        if (!items || !Array.isArray(items)) {
+            return res.status(400).json({ error: 'Missing or invalid items array in request body' });
         }
 
         // Prepare items summary for the AI with more context
@@ -81,7 +103,7 @@ Vrať JSON pole indexů relevantních položek (např. [0, 5, 2]):`;
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
+                    model: 'llama-3.1-8b-instant',
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userPrompt },
@@ -145,10 +167,16 @@ Vrať JSON pole indexů relevantních položek (např. [0, 5, 2]):`;
                 return res.status(504).json({ error: 'timeout' });
             }
 
+            console.error('[AI Search] Fetch error:', fetchError);
             throw fetchError;
         }
     } catch (error) {
-        console.error('Error in AI search:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('[AI Search] Unhandled error:', error);
+        // Return more specific error information for debugging
+        return res.status(500).json({
+            error: 'Internal server error',
+            message: error.message || 'Unknown error',
+            type: error.name || 'Error'
+        });
     }
 }

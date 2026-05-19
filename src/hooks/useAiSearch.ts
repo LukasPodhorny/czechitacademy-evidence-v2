@@ -60,6 +60,7 @@ export function useAiSearch(): UseAiSearchReturn {
             setAiError(null);
             setRateLimited(false);
 
+
             const response = await fetch('/api/ai-search', {
                 method: 'POST',
                 headers: {
@@ -74,13 +75,24 @@ export function useAiSearch(): UseAiSearchReturn {
                 throw new Error('AI search is rate limited. Please try again later.');
             }
 
+            if (response.status === 405) {
+                throw new Error('Server error: Method not allowed. The AI service may be temporarily unavailable. Please try again in a moment.');
+            }
+
             if (response.status === 504) {
                 throw new Error('AI search timed out. Please try again.');
             }
 
+            if (response.status === 500) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.message || errorData.error || 'AI search service error';
+                throw new Error(`${errorMsg}. Please try again.`);
+            }
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || 'AI search failed');
+                const errorMsg = errorData.error || `AI search failed (HTTP ${response.status})`;
+                throw new Error(errorMsg);
             }
 
             const data = await response.json();

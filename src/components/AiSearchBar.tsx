@@ -55,7 +55,7 @@ export function AiSearchBar({
                 <svg className={styles.sparkle} viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
                 </svg>
-                <span>AI Vyhledávání</span>
+                <span>Sémantické vyhledávání</span>
             </div>
             <div className={styles.inputWrapper}>
                 <input
@@ -95,7 +95,7 @@ export function AiSearchBar({
                 </button>
             </div>
             <p className={styles.hint}>
-                AI prohledává všechny položky a vrací nejrelevantnější výsledky na základě vašeho popisu.
+                Hledá podle významu slov, ne jen přesné shody. Vrátí nejrelevantnější výsledky na základě vašeho popisu.
             </p>
         </form>
     );

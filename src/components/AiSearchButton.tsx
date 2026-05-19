@@ -17,17 +17,17 @@ export function AiSearchButton({ onClick, loading, active }: AiSearchButtonProps
             {loading ? (
                 <>
                     <span className={styles.spinner} />
-                    <span>AI hledá...</span>
+                    <span>Hledám...</span>
                 </>
             ) : active ? (
                 <>
                     <span className={styles.icon}>✕</span>
-                    <span>Zrušit AI</span>
+                    <span>Zrušit</span>
                 </>
             ) : (
                 <>
                     <span className={styles.icon}>✦</span>
-                    <span>Hledat s AI</span>
+                    <span>Sémantické hledání</span>
                 </>
             )}
         </button>

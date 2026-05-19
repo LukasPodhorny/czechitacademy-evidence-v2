@@ -1,56 +1,6 @@
-// Serverless function to fetch and modify data in Google Sheets
-// Uses JWT authentication with Google Service Account
-
-async function getAccessToken() {
-    const { GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY } = process.env;
-
-    const now = Math.floor(Date.now() / 1000);
-    const exp = now + 3600;
-
-    const header = {
-        alg: 'RS256',
-        typ: 'JWT',
-    };
-
-    const payload = {
-        iss: GOOGLE_CLIENT_EMAIL,
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
-        aud: 'https://oauth2.googleapis.com/token',
-        exp: exp,
-        iat: now,
-    };
-
-    const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '');
-    const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '');
-    const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-    const privateKey = GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
-
-    const crypto = await import('crypto');
-    const signer = crypto.createSign('RSA-SHA256');
-    signer.update(signingInput);
-    const signature = signer.sign(privateKey, 'base64url');
-
-    const jwt = `${signingInput}.${signature}`;
-
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-            grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            assertion: jwt,
-        }),
-    });
-
-    if (!tokenResponse.ok) {
-        throw new Error('Failed to authenticate with Google');
-    }
-
-    const tokenData = await tokenResponse.json();
-    return tokenData.access_token;
-}
+// Serverless function to fetch data from Supabase
+// Replaces Google Sheets integration
+// Now with automatic embedding generation for new items
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -61,53 +11,48 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const { SPREADSHEET_ID } = process.env;
+    const { SUPABASE_URL, SUPABASE_ANON_KEY, GEMINI_API_KEY } = process.env;
 
-    if (!SPREADSHEET_ID) {
-        return res.status(500).json({ error: 'Missing SPREADSHEET_ID' });
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        return res.status(500).json({ error: 'Missing Supabase credentials' });
     }
 
     try {
-        const accessToken = await getAccessToken();
-
-        // GET - Fetch all items
+        // GET - Fetch all items from Supabase
         if (req.method === 'GET') {
-            const sheetsResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201`,
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/Evidence?select=*`,
                 {
                     headers: {
-                        Authorization: `Bearer ${accessToken}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
                     },
                 }
             );
 
-            if (!sheetsResponse.ok) {
-                throw new Error('Failed to fetch data from Google Sheets');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Supabase error: ${errorText}`);
             }
 
-            const sheetsData = await sheetsResponse.json();
-            const rows = sheetsData.values || [];
+            const data = await response.json();
 
-            if (rows.length < 2) {
-                return res.json([]);
-            }
-
-            const headers = rows[0];
-            const dataRows = rows.slice(1);
-
-            const items = dataRows.map((row, index) => {
-                const item = { _rowIndex: index + 2 }; // Store row index for updates (1-based, +1 for header)
-                headers.forEach((header, colIndex) => {
-                    const value = row[colIndex];
-                    item[header] = value === undefined || value === '' ? null : value;
-                });
-                return item;
-            });
+            // Map Supabase data to expected format (same as before)
+            const items = data.map((row, index) => ({
+                _rowIndex: row.id, // Use Supabase id for compatibility
+                'ID / SKU': row['ID / SKU'] ?? null,
+                'Název': row['Název'] ?? null,
+                'Kategorie': row['Kategorie'] ?? null,
+                'Umístění': row['Umístění'] ?? null,
+                'Množství': row['Množství'] ?? null,
+                'Jednotka': row['Jednotka'] ?? null,
+                'Poznámka': row['Poznámka'] ?? null,
+            }));
 
             return res.json(items);
         }
 
-        // POST - Add new item
+        // POST - Add new item with automatic embedding generation
         if (req.method === 'POST') {
             const { item } = req.body;
 
@@ -115,46 +60,53 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Missing item data' });
             }
 
-            // Get headers first to ensure correct order
-            const sheetsResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201!A1:G1`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
+            // Generate embedding for the new item
+            let embedding = null;
+            if (GEMINI_API_KEY) {
+                try {
+                    embedding = await generateEmbedding(item);
+                } catch (err) {
+                    console.error('Failed to generate embedding:', err);
+                    // Continue without embedding - it can be generated later
                 }
-            );
+            }
 
-            const headersData = await sheetsResponse.json();
-            const headers = headersData.values?.[0] || ['ID / SKU', 'Název', 'Kategorie', 'Umístění', 'Množství', 'Jednotka', 'Poznámka'];
+            // Prepare data for Supabase
+            const supabaseData = {
+                'ID / SKU': item['ID / SKU'],
+                'Název': item['Název'],
+                'Kategorie': item['Kategorie'],
+                'Umístění': item['Umístění'],
+                'Množství': item['Množství'],
+                'Jednotka': item['Jednotka'],
+                'Poznámka': item['Poznámka'],
+                ...(embedding && { embedding }),
+            };
 
-            // Map item to row array based on headers
-            const row = headers.map(header => item[header] || '');
-
-            const appendResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201:append?valueInputOption=RAW`,
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/Evidence`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${accessToken}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
                         'Content-Type': 'application/json',
+                        'Prefer': 'return=representation',
                     },
-                    body: JSON.stringify({
-                        values: [row],
-                    }),
+                    body: JSON.stringify(supabaseData),
                 }
             );
 
-            if (!appendResponse.ok) {
-                const errorData = await appendResponse.text();
-                console.error('Append error:', errorData);
-                throw new Error('Failed to add item');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Supabase error: ${errorText}`);
             }
 
-            return res.json({ success: true });
+            const data = await response.json();
+            return res.status(201).json({ success: true, item: data[0] });
         }
 
-        // PUT - Update existing item
+        // PUT - Update item with automatic embedding generation
         if (req.method === 'PUT') {
             const { rowIndex, item } = req.body;
 
@@ -162,46 +114,52 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Missing rowIndex or item data' });
             }
 
-            // Get headers
-            const sheetsResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201!A1:G1`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
+            // Generate new embedding for the updated item
+            let embedding = null;
+            if (GEMINI_API_KEY) {
+                try {
+                    embedding = await generateEmbedding(item);
+                } catch (err) {
+                    console.error('Failed to generate embedding:', err);
                 }
-            );
-
-            const headersData = await sheetsResponse.json();
-            const headers = headersData.values?.[0] || ['ID / SKU', 'Název', 'Kategorie', 'Umístění', 'Množství', 'Jednotka', 'Poznámka'];
-
-            // Map item to row array
-            const row = headers.map(header => item[header] || '');
-
-            const updateResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201!A${rowIndex}:G${rowIndex}?valueInputOption=RAW`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        values: [row],
-                    }),
-                }
-            );
-
-            if (!updateResponse.ok) {
-                const errorData = await updateResponse.text();
-                console.error('Update error:', errorData);
-                throw new Error('Failed to update item');
             }
 
-            return res.json({ success: true });
+            // Prepare data for Supabase
+            const supabaseData = {
+                'ID / SKU': item['ID / SKU'],
+                'Název': item['Název'],
+                'Kategorie': item['Kategorie'],
+                'Umístění': item['Umístění'],
+                'Množství': item['Množství'],
+                'Jednotka': item['Jednotka'],
+                'Poznámka': item['Poznámka'],
+                ...(embedding && { embedding }),
+            };
+
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/Evidence?id=eq.${rowIndex}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation',
+                    },
+                    body: JSON.stringify(supabaseData),
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Supabase error: ${errorText}`);
+            }
+
+            const data = await response.json();
+            return res.json({ success: true, item: data[0] });
         }
 
-        // DELETE - Delete item (clear row)
+        // DELETE - Delete item
         if (req.method === 'DELETE') {
             const { rowIndex } = req.body;
 
@@ -209,41 +167,20 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Missing rowIndex' });
             }
 
-            // Get headers to know how many columns to clear
-            const sheetsResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201!A1:G1`,
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/Evidence?id=eq.${rowIndex}`,
                 {
+                    method: 'DELETE',
                     headers: {
-                        Authorization: `Bearer ${accessToken}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
                     },
                 }
             );
 
-            const headersData = await sheetsResponse.json();
-            const headers = headersData.values?.[0] || ['ID / SKU', 'Název', 'Kategorie', 'Umístění', 'Množství', 'Jednotka', 'Poznámka'];
-
-            // Create empty row
-            const emptyRow = new Array(headers.length).fill('');
-
-            // Clear the row by setting all values to empty
-            const clearResponse = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/List%201!A${rowIndex}:${String.fromCharCode(64 + headers.length)}${rowIndex}?valueInputOption=RAW`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        values: [emptyRow],
-                    }),
-                }
-            );
-
-            if (!clearResponse.ok) {
-                const errorData = await clearResponse.text();
-                console.error('Delete error:', errorData);
-                throw new Error('Failed to delete item');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Supabase error: ${errorText}`);
             }
 
             return res.json({ success: true });
@@ -254,4 +191,59 @@ export default async function handler(req, res) {
         console.error('Error in sheets API:', error);
         return res.status(500).json({ error: error.message || 'Internal server error' });
     }
+}
+
+/**
+ * Generates embedding for an item using Gemini API
+ * Truncates 3072 dimensions to 768 for Supabase compatibility
+ */
+async function generateEmbedding(item) {
+    const { GEMINI_API_KEY } = process.env;
+
+    if (!GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY not configured');
+    }
+
+    // Combine item fields into text (same logic as generate-embeddings.ts)
+    const parts = [];
+    if (item['Název']) parts.push(`Název: ${item['Název']}`);
+    if (item['Kategorie']) parts.push(`Kategorie: ${item['Kategorie']}`);
+    if (item['ID / SKU']) parts.push(`SKU: ${item['ID / SKU']}`);
+    if (item['Umístění']) parts.push(`Umístění: ${item['Umístění']}`);
+    if (item['Poznámka']) parts.push(`Poznámka: ${item['Poznámka']}`);
+    if (item['Množství'] && item['Jednotka']) {
+        parts.push(`Množství: ${item['Množství']} ${item['Jednotka']}`);
+    }
+    const text = parts.join(' | ');
+
+    // Call Gemini API
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                content: {
+                    parts: [{ text }],
+                },
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    const fullEmbedding = data.embedding?.values;
+
+    if (!fullEmbedding || !Array.isArray(fullEmbedding)) {
+        throw new Error('Invalid embedding response from Gemini API');
+    }
+
+    // Truncate to 768 dimensions (Supabase limit)
+    return fullEmbedding.slice(0, 768);
 }

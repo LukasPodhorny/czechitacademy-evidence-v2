@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useItems } from './hooks/useItems';
-import { useAiSearch } from './hooks/useAiSearch';
+import { useVectorSearch } from './hooks/useVectorSearch';
 import { searchItems, getUniqueCategories } from './utils/search';
 import { SearchBar } from './components/SearchBar';
 import { ItemGrid } from './components/ItemGrid';
@@ -17,14 +17,12 @@ const ITEMS_PER_PAGE = 16;
 function App() {
   const { items, loading, error, refreshItems, addItem, updateItem, deleteItem } = useItems();
   const {
-    aiResults,
-    aiLoading,
-    aiError,
-    rateLimited,
-    retryCountdown,
+    results: aiResults,
+    loading: aiLoading,
+    error: aiError,
     search: aiSearch,
     reset: resetAi,
-  } = useAiSearch();
+  } = useVectorSearch();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isAiMode, setIsAiMode] = useState(false);
@@ -58,19 +56,17 @@ function App() {
     return result;
   }, [items, searchQuery, selectedCategories, isAiMode]);
 
-  // AI search results
+  // AI search results - useVectorSearch returns full items directly
   const displayedItems = useMemo(() => {
     if (aiResults !== null) {
-      return aiResults
-        .map((index) => filteredItems[index])
-        .filter((item) => item !== undefined);
+      return aiResults;
     }
     return filteredItems;
   }, [aiResults, filteredItems]);
 
   const handleAiSearch = () => {
     if (searchQuery.trim()) {
-      aiSearch(searchQuery, filteredItems);
+      aiSearch(searchQuery);
     }
   };
 
@@ -84,11 +80,6 @@ function App() {
     setCurrentPage(1);
   };
 
-  const handleRetry = () => {
-    if (retryCountdown === 0) {
-      handleAiSearch();
-    }
-  };
 
   const handleAddClick = () => {
     setEditingItem(null);
@@ -183,18 +174,24 @@ function App() {
       </header>
 
       <main className={styles.main}>
-        {rateLimited && (
-          <AiRateLimitBanner countdown={retryCountdown} onRetry={handleRetry} />
-        )}
-
-        {aiError && !rateLimited && (
+        {aiError && (
           <div className={styles.aiError}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>{aiError}</span>
+            <div className={styles.aiErrorContent}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{aiError}</span>
+            </div>
+            <button
+              type="button"
+              className={styles.aiErrorRetry}
+              onClick={handleAiSearch}
+              disabled={aiLoading}
+            >
+              {aiLoading ? 'Zkouším...' : 'Zkusit znovu'}
+            </button>
           </div>
         )}
 
