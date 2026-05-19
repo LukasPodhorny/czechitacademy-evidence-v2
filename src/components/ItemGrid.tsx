@@ -1,38 +1,49 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { ItemCard } from './ItemCard';
 import styles from './ItemGrid.module.css';
 import type { Item } from '../hooks/useItems';
 
 interface ItemGridProps {
     items: Item[];
-    aiResults: number[] | null;
     loading: boolean;
     error: string | null;
+    onItemClick?: (item: Item) => void;
+    currentPage: number;
+    onPageChange: (page: number) => void;
+    itemsPerPage: number;
 }
 
-const ITEMS_PER_PAGE = 20;
+export function ItemGrid({
+    items,
+    loading,
+    error,
+    onItemClick,
+    currentPage,
+    onPageChange,
+    itemsPerPage
+}: ItemGridProps) {
+    const totalPages = Math.ceil(items.length / itemsPerPage);
 
-export function ItemGrid({ items, aiResults, loading, error }: ItemGridProps) {
-    const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+    const visibleItems = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return items.slice(start, start + itemsPerPage);
+    }, [items, currentPage, itemsPerPage]);
 
-    // If AI results are active, reorder items based on AI relevance
-    const displayedItems = useMemo(() => {
-        if (aiResults && aiResults.length > 0) {
-            // Map AI result indices to actual items
-            const orderedItems = aiResults
-                .map((index) => items[index])
-                .filter((item): item is Item => item !== undefined);
-            return orderedItems;
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                pages.push(1, 2, 3, '...', totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', currentPage, '...', totalPages);
+            }
         }
-        return items;
-    }, [items, aiResults]);
-
-    const visibleItems = displayedItems.slice(0, displayCount);
-    const hasMore = displayCount < displayedItems.length;
-    const remainingCount = displayedItems.length - displayCount;
-
-    const handleLoadMore = () => {
-        setDisplayCount((prev) => prev + ITEMS_PER_PAGE);
+        return pages;
     };
 
     if (loading) {
@@ -40,10 +51,9 @@ export function ItemGrid({ items, aiResults, loading, error }: ItemGridProps) {
             <div className={styles.grid}>
                 {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className={styles.skeleton}>
-                        <div className={styles.skeletonHeader} />
-                        <div className={styles.skeletonBadge} />
                         <div className={styles.skeletonQuantity} />
-                        <div className={styles.skeletonLine} />
+                        <div className={styles.skeletonName} />
+                        <div className={styles.skeletonCategory} />
                     </div>
                 ))}
             </div>
@@ -53,53 +63,64 @@ export function ItemGrid({ items, aiResults, loading, error }: ItemGridProps) {
     if (error) {
         return (
             <div className={styles.error}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <h3>Nastala chyba</h3>
-                <p>{error}</p>
+                <p>Chyba při načítání dat</p>
             </div>
         );
     }
 
-    if (displayedItems.length === 0) {
+    if (items.length === 0) {
         return (
             <div className={styles.empty}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.3-4.3" />
-                    <line x1="8" y1="8" x2="14" y2="14" />
-                    <line x1="14" y1="8" x2="8" y2="14" />
-                </svg>
-                <h3>Nic nenalezeno</h3>
-                <p>Zkuste upravit vyhledávací dotaz nebo vybrat jinou kategorii.</p>
+                <p>Žádné položky k zobrazení</p>
             </div>
         );
     }
 
     return (
         <div className={styles.container}>
-            <div className={styles.resultsCount}>
-                Nalezeno: <strong>{displayedItems.length}</strong> položek
-                {aiResults && <span className={styles.aiBadge}>✦ AI řazení</span>}
-            </div>
-
             <div className={styles.grid}>
                 {visibleItems.map((item, index) => (
-                    <ItemCard key={index} item={item} index={index} />
+                    <ItemCard
+                        key={index}
+                        item={item}
+                        onClick={() => onItemClick?.(item)}
+                    />
                 ))}
             </div>
 
-            {hasMore && (
-                <button
-                    type="button"
-                    className={styles.loadMore}
-                    onClick={handleLoadMore}
-                >
-                    Načíst další (+{Math.min(remainingCount, ITEMS_PER_PAGE)})
-                </button>
+            {totalPages > 1 && (
+                <div className={styles.pagination}>
+                    <button
+                        className={styles.pageButton}
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="m15 18-6-6 6-6" />
+                        </svg>
+                    </button>
+
+                    {getPageNumbers().map((page, idx) => (
+                        <button
+                            key={idx}
+                            className={`${styles.pageButton} ${page === currentPage ? styles.active : ''} ${page === '...' ? styles.ellipsis : ''}`}
+                            onClick={() => typeof page === 'number' && onPageChange(page)}
+                            disabled={page === '...'}
+                        >
+                            {page}
+                        </button>
+                    ))}
+
+                    <button
+                        className={styles.pageButton}
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="m9 18 6-6-6-6" />
+                        </svg>
+                    </button>
+                </div>
             )}
         </div>
     );

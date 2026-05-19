@@ -27,31 +27,51 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Missing query or items in request body' });
         }
 
-        // Prepare items summary for the AI
+        // Prepare items summary for the AI with more context
         const itemsSummary = items.map((item, index) => {
             const name = item['Název'] || 'Neznámý název';
             const category = item['Kategorie'] || 'Neznámá kategorie';
             const sku = item['ID / SKU'] || '';
             const location = item['Umístění'] || '';
             const note = item['Poznámka'] || '';
-            return `[${index}] ${name} (Kategorie: ${category}, SKU: ${sku}, Umístění: ${location}, Poznámka: ${note})`;
+            const quantity = item['Množství'] || '0';
+
+            // Create a rich description for the AI
+            let description = `[${index}] ${name}`;
+            if (category) description += ` | Kategorie: ${category}`;
+            if (sku) description += ` | SKU: ${sku}`;
+            if (location) description += ` | Umístění: ${location}`;
+            if (note) description += ` | Poznámka: ${note}`;
+            if (quantity) description += ` | Množství: ${quantity}`;
+
+            return description;
         }).join('\n');
 
-        const systemPrompt = `Jsi asistent pro hledání IT vybavení. Dostaneš seznam položek ze skladu a dotaz uživatele v češtině.
+        const systemPrompt = `Jsi inteligentní asistent pro vyhledávání IT komponentů a elektronických součástek v inventáři.
+
+Tvým úkolem je najít relevantní položky na základě přirozeného jazykového dotazu uživatele.
+
+Pokud uživatel hledá například:
+- "síťové komponenty" → hledej položky z kategorie "Síťové komponenty" nebo s názvy obsahujícími: switch, router, kabel, ethernet, RJ45, WiFi, anténa
+- "napájení" → hledej položky z kategorie "Napájecí zdroje" nebo s názvy obsahujícími: zdroj, napájení, adaptér, DC, napětí
+- "senzory" → hledej položky z kategorií "Senzory a detektory", "HVAC senzory" nebo s názvy obsahujícími: senzor, detektor, čidlo, PIR, teplota
+- "pro místnost" → hledej komponenty vhodné pro instalaci v místnosti
+- "automatizace" → hledej PLC, relé, moduly
+
 Vrať POUZE JSON pole indexů (čísel) položek které jsou relevantní pro dotaz, seřazené od nejrelevantnější.
-Vrať pouze pole čísel, žádný jiný text. Příklad: [2, 0, 5]
+Vrať pouze platné JSON ve formátu: [0, 5, 2, 8]
 Pokud žádná položka není relevantní, vrať prázdné pole: []`;
 
-        const userPrompt = `Dotaz uživatele: "${query}"
+        const userPrompt = `Uživatel hledá: "${query}"
 
-Seznam položek:
+Dostupné položky v inventáři:
 ${itemsSummary}
 
-Vrať pouze JSON pole indexů relevantních položek:`;
+Vrať JSON pole indexů relevantních položek (např. [0, 5, 2]):`;
 
         // Create abort controller for timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
 
         try {
             const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -66,8 +86,8 @@ Vrať pouze JSON pole indexů relevantních položek:`;
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userPrompt },
                     ],
-                    temperature: 0.1,
-                    max_tokens: 100,
+                    temperature: 0.3,
+                    max_tokens: 500,
                 }),
                 signal: controller.signal,
             });
@@ -86,27 +106,36 @@ Vrať pouze JSON pole indexů relevantních položek:`;
             }
 
             const groqData = await groqResponse.json();
-            const aiContent = groqData.choices?.[0]?.message?.content || '[]';
+            const aiContent = groqData.choices?.[0]?.message?.content || '';
 
-            // Parse the JSON response
-            let resultIndices;
+            console.log('AI response:', aiContent);
+
+            // Parse the JSON response - try multiple patterns
+            let resultIndices = [];
+
             try {
-                // Try to extract JSON array from the response
-                const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
+                // Try to find JSON array in the response
+                const jsonMatch = aiContent.match(/\[[\s\S]*?\]/);
                 if (jsonMatch) {
                     resultIndices = JSON.parse(jsonMatch[0]);
                 } else {
-                    resultIndices = [];
+                    // Try to find numbers separated by commas
+                    const numberMatch = aiContent.match(/\d+/g);
+                    if (numberMatch) {
+                        resultIndices = numberMatch.map(n => parseInt(n, 10));
+                    }
                 }
             } catch (parseError) {
-                console.error('Failed to parse AI response:', aiContent);
+                console.error('Failed to parse AI response:', aiContent, parseError);
                 resultIndices = [];
             }
 
-            // Validate indices are within bounds
-            const validIndices = resultIndices.filter(
+            // Validate and deduplicate indices
+            const validIndices = [...new Set(resultIndices)].filter(
                 (idx) => Number.isInteger(idx) && idx >= 0 && idx < items.length
             );
+
+            console.log('Valid indices:', validIndices);
 
             return res.json({ indices: validIndices });
         } catch (fetchError) {

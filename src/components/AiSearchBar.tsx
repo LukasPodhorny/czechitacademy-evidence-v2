@@ -51,22 +51,24 @@ export function AiSearchBar({
 
     return (
         <form className={styles.container} onSubmit={handleSubmit}>
-            <label className={styles.label}>
-                <span>Nebo zkuste</span>
-                <span className={styles.aiBadge}>AI vyhledávání</span>
-            </label>
+            <div className={styles.aiBadge}>
+                <svg className={styles.sparkle} viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+                </svg>
+                <span>AI Vyhledávání</span>
+            </div>
             <div className={styles.inputWrapper}>
                 <input
                     type="text"
                     className={`${styles.input} ${active ? styles.inputActive : ''}`}
-                    placeholder="Popište, co hledáte..."
+                    placeholder="Popište, co hledáte přirozeným jazykem... např. 'komponenty pro síť v jedné místnosti'"
                     value={inputValue}
                     onChange={handleInputChange}
                     disabled={loading}
                 />
                 <button
                     type="submit"
-                    className={`${styles.button} ${active ? styles.buttonActive : ''}`}
+                    className={`${styles.button} ${loading ? styles.buttonLoading : ''} ${active ? styles.buttonActive : ''}`}
                     disabled={loading || (!active && !inputValue.trim())}
                 >
                     {loading ? (
@@ -75,14 +77,25 @@ export function AiSearchBar({
                             <span>Hledám...</span>
                         </>
                     ) : active ? (
-                        <span>Zrušit</span>
+                        <>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                            <span>Zrušit AI</span>
+                        </>
                     ) : (
-                        <span>Hledat</span>
+                        <>
+                            <svg className={styles.sparkleSmall} viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+                            </svg>
+                            <span>Hledat s AI</span>
+                        </>
                     )}
                 </button>
             </div>
             <p className={styles.hint}>
-                AI prohledává všechny položky a vrací nejrelevantnější výsledky.
+                AI prohledává všechny položky a vrací nejrelevantnější výsledky na základě vašeho popisu.
             </p>
         </form>
     );

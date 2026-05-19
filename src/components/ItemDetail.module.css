@@ -1,0 +1,198 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.container {
+  background: #f9f9f9;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.closeButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  border-radius: 8px;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  background: #f0f0f0;
+}
+
+.closeButton svg {
+  width: 22px;
+  height: 22px;
+}
+
+.content {
+  padding: 32px 40px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.breadcrumb button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+}
+
+.breadcrumb button:hover {
+  color: #007aff;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.category {
+  font-size: 15px;
+  color: #666;
+  margin: 0 0 24px;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 32px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #007aff;
+  background: #e8f4fd;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.editButton:hover {
+  background: #d4ebfc;
+}
+
+.editButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.section {
+  padding: 24px 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+.section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 20px;
+}
+
+.specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.spec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spec label {
+  font-size: 13px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spec span {
+  font-size: 15px;
+  color: #000;
+}
+
+.quantity {
+  font-size: 20px;
+  font-weight: 600;
+  color: #007aff;
+}
+
+.noteSection {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: #cce5ff;
+  border-radius: 10px;
+}
+
+.noteSection p {
+  font-size: 15px;
+  color: #004085;
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .container {
+    max-height: 85vh;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .content {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .specs {
+    grid-template-columns: 1fr;
+  }
+}
