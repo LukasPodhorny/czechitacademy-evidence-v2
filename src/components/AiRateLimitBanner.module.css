@@ -1,0 +1,69 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 77, 109, 0.1);
+  border: 1px solid rgba(255, 77, 109, 0.3);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  color: var(--error);
+  flex-shrink: 0;
+}
+
+.text {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.retryButton {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--sans);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.retryButton:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+}
+
+.retryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .content {
+    justify-content: center;
+  }
+
+  .retryButton {
+    width: 100%;
+  }
+}

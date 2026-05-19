@@ -1,122 +1,124 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useMemo, useCallback } from 'react';
+import { useItems } from './hooks/useItems';
+import { useAiSearch } from './hooks/useAiSearch';
+import { searchItems, getUniqueCategories } from './utils/search';
+import { SearchBar } from './components/SearchBar';
+import { CategoryFilter } from './components/CategoryFilter';
+import { ItemGrid } from './components/ItemGrid';
+import { AiRateLimitBanner } from './components/AiRateLimitBanner';
+import styles from './App.module.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { items, loading, error } = useItems();
+  const {
+    aiResults,
+    aiLoading,
+    aiError,
+    rateLimited,
+    retryCountdown,
+    search: aiSearch,
+    reset: resetAi,
+  } = useAiSearch();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Get unique categories from items
+  const categories = useMemo(() => getUniqueCategories(items), [items]);
+
+  // Apply fulltext search and category filter
+  const filteredItems = useMemo(() => {
+    return searchItems(items, searchQuery, selectedCategory);
+  }, [items, searchQuery, selectedCategory]);
+
+  // Handle AI search
+  const handleAiSearch = useCallback(() => {
+    if (searchQuery.trim()) {
+      aiSearch(searchQuery, filteredItems);
+    }
+  }, [searchQuery, filteredItems, aiSearch]);
+
+  // Handle retry after rate limit
+  const handleRetry = useCallback(() => {
+    if (retryCountdown === 0) {
+      handleAiSearch();
+    }
+  }, [retryCountdown, handleAiSearch]);
+
+  // Determine which items to display
+  const displayedItems = useMemo(() => {
+    if (aiResults !== null) {
+      // AI results contain indices - map them back to items
+      return aiResults
+        .map((index) => filteredItems[index])
+        .filter((item) => item !== undefined);
+    }
+    return filteredItems;
+  }, [aiResults, filteredItems]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className={styles.app}>
+      <header className={styles.header}>
+        <div className={styles.logo}>
+          <span className={styles.logoIcon}>⚡</span>
+          <h1 className={styles.logoText}>
+            <span className={styles.logoAccent}>Czech IT</span> Evidence
+          </h1>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <p className={styles.subtitle}>Katalog IT majetku</p>
+      </header>
 
-      <div className="ticks"></div>
+      <main className={styles.main}>
+        <div className={styles.controls}>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onAiSearch={handleAiSearch}
+            aiLoading={aiLoading}
+            aiActive={aiResults !== null}
+            onResetAi={resetAi}
+          />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          <div className={styles.filters}>
+            <CategoryFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onChange={setSelectedCategory}
+            />
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {rateLimited && (
+          <AiRateLimitBanner
+            countdown={retryCountdown}
+            onRetry={handleRetry}
+          />
+        )}
+
+        {aiError && !rateLimited && (
+          <div className={styles.aiError}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{aiError}</span>
+          </div>
+        )}
+
+        <ItemGrid
+          items={displayedItems}
+          aiResults={aiResults}
+          loading={loading}
+          error={error}
+        />
+      </main>
+
+      <footer className={styles.footer}>
+        <p>© 2024 Czech IT Academy — Interní nástroj</p>
+      </footer>
+    </div>
+  );
 }
 
-export default App
+export default App;
