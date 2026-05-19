@@ -7,7 +7,6 @@ import { ItemGrid } from './components/ItemGrid';
 import { ItemModal } from './components/ItemModal';
 import { FilterModal } from './components/FilterModal';
 import { ItemDetail } from './components/ItemDetail';
-import { AiRateLimitBanner } from './components/AiRateLimitBanner';
 import logo from './assets/czechitacademy_logo.png';
 import styles from './App.module.css';
 import type { Item } from './hooks/useItems';
