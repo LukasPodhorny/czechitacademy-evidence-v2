@@ -10,7 +10,7 @@
  *
  * Environment variables:
  *   - GEMINI_API_KEY: Google Gemini API key for generating query embeddings
- *   - NEXT_PUBLIC_SUPABASE_URL: Supabase project URL
+ *   - SUPABASE_URL: Supabase project URL
  *   - SUPABASE_SERVICE_ROLE_KEY: Supabase service role key
  */
 
@@ -19,7 +19,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Environment variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Default search parameters

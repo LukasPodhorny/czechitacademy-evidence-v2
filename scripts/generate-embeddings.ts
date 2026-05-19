@@ -10,7 +10,7 @@
  *
  * Required environment variables:
  *   - GEMINI_API_KEY: Google Gemini API key
- *   - NEXT_PUBLIC_SUPABASE_URL: Supabase project URL
+ *   - SUPABASE_URL: Supabase project URL
  *   - SUPABASE_SERVICE_ROLE_KEY: Supabase service role key (for admin access)
  */
 
@@ -27,7 +27,7 @@ if (!process.env.GEMINI_API_KEY) {
 
 // Environment variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Validate environment variables
@@ -38,7 +38,7 @@ if (!GEMINI_API_KEY) {
 }
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('❌ Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required');
+    console.error('❌ Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required');
     console.error('   Please add these to your .env or .env.local file');
     process.exit(1);
 }
