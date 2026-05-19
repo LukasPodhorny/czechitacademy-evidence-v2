@@ -3,6 +3,7 @@ import { useItems } from './hooks/useItems';
 import { useAiSearch } from './hooks/useAiSearch';
 import { searchItems, getUniqueCategories } from './utils/search';
 import { SearchBar } from './components/SearchBar';
+import { AiSearchBar } from './components/AiSearchBar';
 import { CategoryFilter } from './components/CategoryFilter';
 import { ItemGrid } from './components/ItemGrid';
 import { AiRateLimitBanner } from './components/AiRateLimitBanner';
@@ -21,34 +22,29 @@ function App() {
   } = useAiSearch();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Get unique categories from items
   const categories = useMemo(() => getUniqueCategories(items), [items]);
 
-  // Apply fulltext search and category filter
   const filteredItems = useMemo(() => {
     return searchItems(items, searchQuery, selectedCategory);
   }, [items, searchQuery, selectedCategory]);
 
-  // Handle AI search
   const handleAiSearch = useCallback(() => {
-    if (searchQuery.trim()) {
-      aiSearch(searchQuery, filteredItems);
+    if (aiSearchQuery.trim()) {
+      aiSearch(aiSearchQuery, filteredItems);
     }
-  }, [searchQuery, filteredItems, aiSearch]);
+  }, [aiSearchQuery, filteredItems, aiSearch]);
 
-  // Handle retry after rate limit
   const handleRetry = useCallback(() => {
     if (retryCountdown === 0) {
       handleAiSearch();
     }
   }, [retryCountdown, handleAiSearch]);
 
-  // Determine which items to display
   const displayedItems = useMemo(() => {
     if (aiResults !== null) {
-      // AI results contain indices - map them back to items
       return aiResults
         .map((index) => filteredItems[index])
         .filter((item) => item !== undefined);
@@ -59,40 +55,34 @@ function App() {
   return (
     <div className={styles.app}>
       <header className={styles.header}>
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>⚡</span>
-          <h1 className={styles.logoText}>
-            <span className={styles.logoAccent}>Czech IT</span> Evidence
-          </h1>
-        </div>
-        <p className={styles.subtitle}>Katalog IT majetku</p>
+        <h1 className={styles.title}>
+          <span className={styles.accent}>IT</span> Evidence
+        </h1>
       </header>
 
       <main className={styles.main}>
-        <div className={styles.controls}>
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            onAiSearch={handleAiSearch}
-            aiLoading={aiLoading}
-            aiActive={aiResults !== null}
-            onResetAi={resetAi}
-          />
-
-          <div className={styles.filters}>
+        <div className={styles.searchSection}>
+          <div className={styles.searchRow}>
+            <SearchBar value={searchQuery} onChange={setSearchQuery} />
             <CategoryFilter
               categories={categories}
               selectedCategory={selectedCategory}
               onChange={setSelectedCategory}
             />
           </div>
+
+          <AiSearchBar
+            value={aiSearchQuery}
+            onChange={setAiSearchQuery}
+            onSearch={handleAiSearch}
+            loading={aiLoading}
+            active={aiResults !== null}
+            onReset={resetAi}
+          />
         </div>
 
         {rateLimited && (
-          <AiRateLimitBanner
-            countdown={retryCountdown}
-            onRetry={handleRetry}
-          />
+          <AiRateLimitBanner countdown={retryCountdown} onRetry={handleRetry} />
         )}
 
         {aiError && !rateLimited && (
@@ -115,7 +105,7 @@ function App() {
       </main>
 
       <footer className={styles.footer}>
-        <p>© 2024 Czech IT Academy — Interní nástroj</p>
+        <p>Czech IT Academy</p>
       </footer>
     </div>
   );

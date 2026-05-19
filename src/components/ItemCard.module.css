@@ -1,20 +1,20 @@
 .card {
-  background: var(--bg-card);
+  background: #fff;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-  animation: fadeIn 0.4s ease-out forwards;
+  border-radius: 8px;
+  padding: 16px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  animation: fadeIn 0.3s ease-out forwards;
   opacity: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -23,77 +23,73 @@
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.1);
+  border-color: #ccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .title {
-  font-family: var(--heading);
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .categoryBadge {
   display: inline-flex;
   align-self: flex-start;
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
   font-weight: 500;
-  font-family: var(--mono);
-  border: 1px solid;
   border-radius: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .sku {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .quantity {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .quantityValue {
-  font-family: var(--heading);
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--accent);
   line-height: 1;
 }
 
 .quantityUnit {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
-  text-transform: lowercase;
 }
 
 .location {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
 .location svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
@@ -106,5 +102,4 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 4px;
 }

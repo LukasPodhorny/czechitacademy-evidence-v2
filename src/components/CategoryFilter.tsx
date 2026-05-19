@@ -14,7 +14,7 @@ export function CategoryFilter({
     return (
         <div className={styles.container}>
             <label className={styles.label} htmlFor="category-select">
-                Kategorie:
+                Kategorie
             </label>
             <select
                 id="category-select"

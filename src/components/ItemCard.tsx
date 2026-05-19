@@ -1,22 +1,22 @@
 import styles from './ItemCard.module.css';
 import type { Item } from '../hooks/useItems';
 
-// Category color mapping - 14 distinct colors for the 14 categories
+// Subtle category colors for light theme
 const categoryColors: Record<string, string> = {
-    'Síťové komponenty': '#00ff88',
-    'PLC a automatizace': '#00ccff',
+    'Síťové komponenty': '#0066ff',
+    'PLC a automatizace': '#00a3ff',
     'Senzory a detektory': '#ff6b6b',
-    'Napájecí zdroje': '#ffd93d',
-    'HVAC senzory': '#6bcf7f',
-    'Elektroinstalační materiál': '#ff9f43',
-    'Ruční nářadí': '#a55eea',
-    'Ostatní': '#778ca3',
-    'Zabezpečovací technika': '#ff4757',
-    'Audio zařízení': '#2ed573',
-    'Měřicí technika': '#1e90ff',
-    'Periferní zařízení': '#ff6348',
-    'PC komponenty': '#7bed9f',
-    'PC komponenty/ ostatní': '#70a1ff',
+    'Napájecí zdroje': '#ffa500',
+    'HVAC senzory': '#20c997',
+    'Elektroinstalační materiál': '#ff8c42',
+    'Ruční nářadí': '#9b59b6',
+    'Ostatní': '#6c757d',
+    'Zabezpečovací technika': '#e74c3c',
+    'Audio zařízení': '#27ae60',
+    'Měřicí technika': '#3498db',
+    'Periferní zařízení': '#e67e22',
+    'PC komponenty': '#1abc9c',
+    'PC komponenty/ ostatní': '#5dade2',
 };
 
 interface ItemCardProps {
@@ -26,7 +26,7 @@ interface ItemCardProps {
 
 export function ItemCard({ item, index }: ItemCardProps) {
     const category = item['Kategorie'] || 'Ostatní';
-    const categoryColor = categoryColors[category] || '#778ca3';
+    const categoryColor = categoryColors[category] || '#6c757d';
 
     const quantity = item['Množství'];
     const unit = item['Jednotka'];
@@ -35,29 +35,24 @@ export function ItemCard({ item, index }: ItemCardProps) {
     const sku = item['ID / SKU'];
     const name = item['Název'] || 'Neznámý název';
 
-    // Calculate animation delay based on index (stagger effect)
-    const animationDelay = `${index * 30}ms`;
+    const animationDelay = `${index * 20}ms`;
 
     return (
-        <div
-            className={styles.card}
-            style={{ animationDelay }}
-        >
+        <div className={styles.card} style={{ animationDelay }}>
             <div className={styles.header}>
-                <h3 className={styles.title}>{name}</h3>
                 <span
                     className={styles.categoryBadge}
-                    style={{ backgroundColor: `${categoryColor}20`, color: categoryColor, borderColor: `${categoryColor}40` }}
+                    style={{
+                        backgroundColor: `${categoryColor}15`,
+                        color: categoryColor
+                    }}
                 >
                     {category}
                 </span>
+                <h3 className={styles.title}>{name}</h3>
             </div>
 
-            {sku && (
-                <div className={styles.sku}>
-                    SKU: {sku}
-                </div>
-            )}
+            {sku && <div className={styles.sku}>{sku}</div>}
 
             <div className={styles.quantity}>
                 <span className={styles.quantityValue}>{quantity || '0'}</span>
