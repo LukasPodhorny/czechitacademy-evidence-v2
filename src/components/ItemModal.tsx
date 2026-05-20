@@ -117,7 +117,8 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
                     <div className={styles.field}>
                         <label>Množství</label>
                         <input
-                            type="text"
+                            type="number"
+                            min="0"
                             value={formData['Množství'] || ''}
                             onChange={e => handleChange('Množství', e.target.value)}
                             placeholder=""
