@@ -41,7 +41,7 @@
   flex-direction: column;
   gap: 8px;
   animation: pulse 1.5s ease-in-out infinite;
-  height: 120px;
+  min-height: 120px;
 }
 
 @keyframes pulse {
