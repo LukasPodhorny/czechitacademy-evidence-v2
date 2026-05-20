@@ -1,12 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useItems } from './hooks/useItems';
 import { useVectorSearch } from './hooks/useVectorSearch';
+import { useTransactions, type CreateTransactionData } from './hooks/useTransactions';
 import { searchItems, getUniqueCategories } from './utils/search';
 import { SearchBar } from './components/SearchBar';
 import { ItemGrid } from './components/ItemGrid';
 import { ItemModal } from './components/ItemModal';
 import { FilterModal } from './components/FilterModal';
 import { ItemDetail } from './components/ItemDetail';
+import { BorrowModal } from './components/BorrowModal';
 import logo from './assets/czechitacademy_logo.png';
 import styles from './App.module.css';
 import type { Item } from './hooks/useItems';
@@ -22,6 +24,13 @@ function App() {
     search: aiSearch,
     reset: resetAi,
   } = useVectorSearch();
+  const {
+    transactions,
+    loading: transactionsLoading,
+    fetchTransactions,
+    createTransaction,
+    returnItems,
+  } = useTransactions();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isAiMode, setIsAiMode] = useState(false);
@@ -31,8 +40,17 @@ function App() {
   // Modal states
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
+  const [borrowModalMode, setBorrowModalMode] = useState<'borrow' | 'take'>('borrow');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [viewingItem, setViewingItem] = useState<Item | null>(null);
+
+  // Fetch transactions when viewing item changes
+  useEffect(() => {
+    if (viewingItem && viewingItem._rowIndex) {
+      fetchTransactions(viewingItem._rowIndex);
+    }
+  }, [viewingItem, fetchTransactions]);
 
   const categories = useMemo(() => getUniqueCategories(items), [items]);
 
@@ -92,9 +110,32 @@ function App() {
   const handleEditFromDetail = () => {
     if (viewingItem) {
       setEditingItem(viewingItem);
-      setViewingItem(null);
       setIsItemModalOpen(true);
     }
+  };
+
+  const handleBorrowClick = () => {
+    setBorrowModalMode('borrow');
+    setIsBorrowModalOpen(true);
+  };
+
+  const handleTakeClick = () => {
+    setBorrowModalMode('take');
+    setIsBorrowModalOpen(true);
+  };
+
+  const handleBorrowModalClose = () => {
+    setIsBorrowModalOpen(false);
+  };
+
+  const handleTransactionSubmit = async (data: CreateTransactionData) => {
+    await createTransaction(data);
+    await refreshItems();
+  };
+
+  const handleReturnItems = async (transactionId: number) => {
+    await returnItems(transactionId);
+    await refreshItems();
   };
 
   const handleSaveItem = async (itemData: Partial<Item>) => {
@@ -227,6 +268,23 @@ function App() {
           item={viewingItem}
           onClose={() => setViewingItem(null)}
           onEdit={handleEditFromDetail}
+          onBorrow={handleBorrowClick}
+          onTake={handleTakeClick}
+          transactions={transactions}
+          onReturn={handleReturnItems}
+          loadingTransactions={transactionsLoading}
+        />
+      )}
+
+      {viewingItem && (
+        <BorrowModal
+          isOpen={isBorrowModalOpen}
+          onClose={handleBorrowModalClose}
+          onSubmit={handleTransactionSubmit}
+          itemId={viewingItem._rowIndex || 0}
+          itemName={viewingItem['Název'] || ''}
+          availableQuantity={parseInt(viewingItem['Množství'] || '0', 10)}
+          mode={borrowModalMode}
         />
       )}
     </div>
