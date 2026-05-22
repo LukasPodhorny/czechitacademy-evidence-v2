@@ -1,16 +1,13 @@
 .card {
   background: #fff;
   border-radius: 12px;
-  padding: 16px;
   cursor: pointer;
   transition: box-shadow 0.15s;
   animation: fadeIn 0.3s ease-out forwards;
   opacity: 0;
-  min-height: 120px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 8px;
+  overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -28,15 +25,54 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.quantity {
-  font-size: 14px;
-  font-weight: 600;
-  color: #007aff;
+.imageContainer {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.noImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #ccc;
+}
+
+.noImage svg {
+  width: 32px;
+  height: 32px;
+  opacity: 0.5;
+}
+
+.content {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.quantity {
+  font-size: 13px;
+  font-weight: 600;
+  color: #007aff;
+}
+
 .name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: #000;
   line-height: 1.4;
@@ -46,11 +82,10 @@
 }
 
 .category {
-  font-size: 13px;
+  font-size: 12px;
   color: #8e8e93;
   margin-top: auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
 }

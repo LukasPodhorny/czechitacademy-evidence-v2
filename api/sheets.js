@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         // GET - Fetch all items from Supabase
         if (req.method === 'GET') {
             const response = await fetch(
-                `${SUPABASE_URL}/rest/v1/Evidence?select=*`,
+                `${SUPABASE_URL}/rest/v1/Evidence?select=*&order=id.asc`,
                 {
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
@@ -47,6 +47,7 @@ export default async function handler(req, res) {
                 'Množství': row['Množství'] ?? null,
                 'Jednotka': row['Jednotka'] ?? null,
                 'Poznámka': row['Poznámka'] ?? null,
+                image_url: row.image_url ?? null,
             }));
 
             return res.json(items);
@@ -80,6 +81,7 @@ export default async function handler(req, res) {
                 'Množství': item['Množství'],
                 'Jednotka': item['Jednotka'],
                 'Poznámka': item['Poznámka'],
+                image_url: item.image_url || null,
                 ...(embedding && { embedding }),
             };
 
@@ -133,6 +135,7 @@ export default async function handler(req, res) {
                 'Množství': item['Množství'],
                 'Jednotka': item['Jednotka'],
                 'Poznámka': item['Poznámka'],
+                image_url: item.image_url || null,
                 ...(embedding && { embedding }),
             };
 

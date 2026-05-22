@@ -9,6 +9,7 @@ export interface Item {
     'Množství': string | null;
     'Jednotka': string | null;
     'Poznámka': string | null;
+    image_url?: string | null;
 }
 
 interface UseItemsReturn {

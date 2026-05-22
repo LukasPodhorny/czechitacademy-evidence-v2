@@ -32,6 +32,7 @@ export function ItemDetail({
     const unit = item['Jednotka'] || 'ks';
     const location = item['Umístění'] || '';
     const note = item['Poznámka'] || '';
+    const imageUrl = item.image_url;
     const availableQuantity = parseInt(quantity, 10) || 0;
 
     // Calculate borrowed/taken quantities
@@ -72,6 +73,28 @@ export function ItemDetail({
                         <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
+
+                {/* Image Section */}
+                {imageUrl ? (
+                    <div className={styles.imageSection}>
+                        <img
+                            src={imageUrl}
+                            alt={name}
+                            className={styles.detailImage}
+                        />
+                    </div>
+                ) : (
+                    <div className={styles.noImageSection}>
+                        <div className={styles.noImagePlaceholder}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                            <span>Žádný obrázek</span>
+                        </div>
+                    </div>
+                )}
 
                 <div className={styles.content}>
                     <h1 className={styles.title}>{name}</h1>
