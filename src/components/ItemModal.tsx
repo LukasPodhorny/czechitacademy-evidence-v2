@@ -80,7 +80,7 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
                     </div>
 
                     <div className={styles.field}>
-                        <label>Název</label>
+                        <label>Název <span className={styles.required}>*</span></label>
                         <input
                             type="text"
                             value={formData['Název'] || ''}
@@ -91,7 +91,7 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
                     </div>
 
                     <div className={styles.field}>
-                        <label>Kategorie</label>
+                        <label>Kategorie <span className={styles.required}>*</span></label>
                         <select
                             value={formData['Kategorie'] || ''}
                             onChange={e => handleChange('Kategorie', e.target.value)}
@@ -115,13 +115,14 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
                     </div>
 
                     <div className={styles.field}>
-                        <label>Množství</label>
+                        <label>Množství <span className={styles.required}>*</span></label>
                         <input
                             type="number"
                             min="0"
                             value={formData['Množství'] || ''}
                             onChange={e => handleChange('Množství', e.target.value)}
                             placeholder=""
+                            required
                         />
                     </div>
 
