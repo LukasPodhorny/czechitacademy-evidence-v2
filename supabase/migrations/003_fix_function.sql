@@ -15,6 +15,7 @@ CREATE TYPE match_evidence_result AS (
     "Množství" text,
     "Jednotka" text,
     "Poznámka" text,
+    image_url text,
     similarity float
 );
 
@@ -37,6 +38,7 @@ BEGIN
         e."Množství"::text,
         e."Jednotka"::text,
         e."Poznámka"::text,
+        e.image_url::text,
         (1 - (e.embedding <=> query_embedding))::float AS similarity
     FROM "Evidence" e
     WHERE e.embedding IS NOT NULL

@@ -145,6 +145,11 @@ function App() {
       await addItem(itemData as Item);
     }
     await refreshItems();
+
+    // Update viewingItem if it was the edited item
+    if (editingItem && viewingItem && editingItem._rowIndex === viewingItem._rowIndex) {
+      setViewingItem({ ...viewingItem, ...itemData } as Item);
+    }
   };
 
   const handleDeleteItem = async () => {

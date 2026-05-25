@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
 import styles from './ItemModal.module.css';
 import type { Item } from '../hooks/useItems';
+import { useAiRecognition } from '../hooks/useAiRecognition';
 
 interface ItemModalProps {
     isOpen: boolean;
@@ -45,6 +46,16 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // AI Recognition states
+    const [useAiMode, setUseAiMode] = useState(false);
+    const [aiImages, setAiImages] = useState<File[]>([]);
+    const [aiImagePreviews, setAiImagePreviews] = useState<string[]>([]);
+    const [showAiResults, setShowAiResults] = useState(false);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
+    const galleryInputRef = useRef<HTMLInputElement>(null);
+
+    const { recognizeImages, isRecognizing, error: aiError } = useAiRecognition();
+
     useEffect(() => {
         if (isOpen) {
             setFormData(item || emptyItem);
@@ -52,6 +63,11 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
             setImageFile(null);
             setShowDeleteConfirm(false);
             setIsDragging(false);
+            // Reset AI states
+            setUseAiMode(false);
+            setAiImages([]);
+            setAiImagePreviews([]);
+            setShowAiResults(false);
         }
     }, [isOpen, item]);
 
@@ -203,7 +219,236 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
         return `${SUPABASE_URL}/storage/v1/object/public/parts-images/${filePath}`;
     };
 
+    // AI Recognition handlers
+    const handleToggleAiMode = () => {
+        setUseAiMode(!useAiMode);
+        if (useAiMode) {
+            // Reset AI mode
+            setAiImages([]);
+            setAiImagePreviews([]);
+            setShowAiResults(false);
+        }
+    };
+
+    const processAiImage = async (file: File) => {
+        if (!file.type.startsWith('image/')) {
+            alert('Prosím vyberte obrázek (JPG, PNG, GIF, WebP)');
+            return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+            alert('Obrázek je příliš velký. Maximální velikost je 20MB před kompresí.');
+            return;
+        }
+
+        try {
+            const compressedFile = await imageCompression(file, compressionOptions);
+            setAiImages(prev => [...prev, compressedFile]);
+            setAiImagePreviews(prev => [...prev, URL.createObjectURL(compressedFile)]);
+        } catch (err) {
+            console.error('Failed to compress image:', err);
+            alert('Nepodařilo se zkomprimovat obrázek.');
+        }
+    };
+
+    const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        Array.from(files).forEach(file => {
+            processAiImage(file);
+        });
+
+        // Reset input so same file can be selected again
+        if (cameraInputRef.current) {
+            cameraInputRef.current.value = '';
+        }
+    };
+
+    const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        Array.from(files).forEach(file => {
+            processAiImage(file);
+        });
+
+        // Reset input so same file can be selected again
+        if (galleryInputRef.current) {
+            galleryInputRef.current.value = '';
+        }
+    };
+
+    const removeAiImage = (index: number) => {
+        setAiImages(prev => prev.filter((_, i) => i !== index));
+        setAiImagePreviews(prev => {
+            URL.revokeObjectURL(prev[index]);
+            return prev.filter((_, i) => i !== index);
+        });
+    };
+
+    const handleAiRecognize = async () => {
+        if (aiImages.length === 0) {
+            alert('Prosím pořiďte nebo nahrajte alespoň jeden obrázek.');
+            return;
+        }
+
+        const result = await recognizeImages(aiImages, categories);
+
+        if (result) {
+            setFormData(prev => ({
+                ...prev,
+                'ID / SKU': result['ID / SKU'] || '',
+                'Název': result['Název'] || '',
+                'Kategorie': result['Kategorie'] || '',
+                'Umístění': '',
+                'Množství': result['Množství'] || '1',
+                'Jednotka': 'ks',
+                'Poznámka': result['Poznámka'] || '',
+            }));
+
+            // Set the first AI image as the main image
+            if (aiImages.length > 0) {
+                setImageFile(aiImages[0]);
+                setImagePreview(aiImagePreviews[0]);
+            }
+
+            setShowAiResults(true);
+        }
+    };
+
+    const handleBackToAi = () => {
+        setShowAiResults(false);
+    };
+
     const isEditing = !!item;
+
+    // AI Mode View
+    if (useAiMode && !showAiResults) {
+        return (
+            <div className={styles.overlay} onClick={onClose}>
+                <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                    <button className={styles.closeButton} onClick={onClose}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+
+                    <div className={styles.form}>
+                        <div className={styles.aiHeader}>
+                            <h2 className={styles.aiTitle}>Přidat s AI</h2>
+                            <p className={styles.aiSubtitle}>Pořiďte fotografie součástky a AI automaticky rozpozná její parametry</p>
+                        </div>
+
+                        {/* Hidden file inputs */}
+                        <input
+                            ref={cameraInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleCameraCapture}
+                            className={styles.fileInput}
+                            id="camera-capture"
+                        />
+                        <input
+                            ref={galleryInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleGallerySelect}
+                            className={styles.fileInput}
+                            id="gallery-select"
+                        />
+
+                        {/* Photo buttons */}
+                        <div className={styles.aiPhotoButtons}>
+                            <label htmlFor="camera-capture" className={styles.aiPhotoButton}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                    <circle cx="12" cy="13" r="4" />
+                                </svg>
+                                <span>Vyfotit</span>
+                            </label>
+                            <label htmlFor="gallery-select" className={styles.aiPhotoButton}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                <span>Nahrát z galerie</span>
+                            </label>
+                        </div>
+
+                        {/* AI Image previews */}
+                        {aiImagePreviews.length > 0 && (
+                            <div className={styles.aiImageGrid}>
+                                {aiImagePreviews.map((preview, index) => (
+                                    <div key={index} className={styles.aiImageWrapper}>
+                                        <img src={preview} alt={`AI foto ${index + 1}`} className={styles.aiImagePreview} />
+                                        <button
+                                            type="button"
+                                            className={styles.aiImageRemove}
+                                            onClick={() => removeAiImage(index)}
+                                            title="Odstranit fotografii"
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {aiError && (
+                            <div className={styles.aiError}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                                <span>{aiError}</span>
+                            </div>
+                        )}
+
+                        <div className={styles.aiActions}>
+                            <button
+                                type="button"
+                                className={styles.aiRecognizeButton}
+                                onClick={handleAiRecognize}
+                                disabled={isRecognizing || aiImages.length === 0}
+                            >
+                                {isRecognizing ? (
+                                    <>
+                                        <div className={styles.spinner}></div>
+                                        <span>Rozpoznávám...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M9 11l3 3L22 4" />
+                                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                        </svg>
+                                        <span>Rozpoznat s AI</span>
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.aiCancelButton}
+                                onClick={handleToggleAiMode}
+                                disabled={isRecognizing}
+                            >
+                                Zpět na manuální zadání
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.overlay} onClick={onClose}>
@@ -216,6 +461,21 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
                 </button>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
+                    {/* AI Toggle - only show when adding new item */}
+                    {!isEditing && (
+                        <button
+                            type="button"
+                            className={styles.aiToggleButton}
+                            onClick={handleToggleAiMode}
+                            title="Vyfotit a rozpoznat s AI"
+                        >
+                            <svg className={styles.sparkle} viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+                            </svg>
+                            <span>Vyfotit a rozpoznat s AI</span>
+                        </button>
+                    )}
+
                     {/* Image Upload Section */}
                     <div className={styles.imageSection}>
                         <label className={styles.imageLabel}>Obrázek</label>
@@ -365,6 +625,21 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
                             Zrušit
                         </button>
                     </div>
+
+                    {showAiResults && (
+                        <button
+                            type="button"
+                            className={styles.backToAiButton}
+                            onClick={handleBackToAi}
+                            disabled={isSubmitting || isUploading || isCompressing}
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M19 12H5" />
+                                <path d="M12 19l-7-7 7-7" />
+                            </svg>
+                            <span>Zpět k AI rozpoznání</span>
+                        </button>
+                    )}
 
                     {isEditing && onDelete && !showDeleteConfirm && (
                         <button

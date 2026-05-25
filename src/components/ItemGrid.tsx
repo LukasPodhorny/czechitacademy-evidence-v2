@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import { ItemCard } from './ItemCard';
 import styles from './ItemGrid.module.css';
 import type { Item } from '../hooks/useItems';
@@ -23,6 +23,28 @@ export function ItemGrid({
     itemsPerPage
 }: ItemGridProps) {
     const totalPages = Math.ceil(items.length / itemsPerPage);
+    const shouldScrollRef = useRef(false);
+
+    const handlePageChange = (page: number) => {
+        shouldScrollRef.current = true;
+        onPageChange(page);
+    };
+
+    // Callback ref for the first item - triggers scroll when it actually mounts
+    const setFirstItemRef = useCallback((el: HTMLDivElement | null) => {
+        if (el && shouldScrollRef.current) {
+            shouldScrollRef.current = false;
+            // Multiple scroll attempts with increasing delays
+            const scroll = () => {
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+            };
+            scroll();
+            setTimeout(scroll, 50);
+            setTimeout(scroll, 150);
+            setTimeout(scroll, 300);
+        }
+    }, []);
 
     const visibleItems = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -80,11 +102,16 @@ export function ItemGrid({
         <div className={styles.container}>
             <div className={styles.grid}>
                 {visibleItems.map((item, index) => (
-                    <ItemCard
-                        key={index}
-                        item={item}
-                        onClick={() => onItemClick?.(item)}
-                    />
+                    <div
+                        key={`${currentPage}-${index}`}
+                        ref={index === 0 ? setFirstItemRef : undefined}
+                        style={{ display: 'contents' }}
+                    >
+                        <ItemCard
+                            item={item}
+                            onClick={() => onItemClick?.(item)}
+                        />
+                    </div>
                 ))}
             </div>
 
@@ -94,7 +121,7 @@ export function ItemGrid({
                     <div className={styles.paginationDesktop}>
                         <button
                             className={styles.pageButton}
-                            onClick={() => onPageChange(currentPage - 1)}
+                            onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
                         >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -106,7 +133,7 @@ export function ItemGrid({
                             <button
                                 key={idx}
                                 className={`${styles.pageButton} ${page === currentPage ? styles.active : ''} ${page === '...' ? styles.ellipsis : ''}`}
-                                onClick={() => typeof page === 'number' && onPageChange(page)}
+                                onClick={() => typeof page === 'number' && handlePageChange(page)}
                                 disabled={page === '...'}
                             >
                                 {page}
@@ -115,7 +142,7 @@ export function ItemGrid({
 
                         <button
                             className={styles.pageButton}
-                            onClick={() => onPageChange(currentPage + 1)}
+                            onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
                         >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -124,30 +151,25 @@ export function ItemGrid({
                         </button>
                     </div>
 
-                    {/* Mobile pagination - Previous/Next only */}
+                    {/* Mobile pagination - Previous/Next with page indicator */}
                     <div className={styles.paginationMobile}>
                         <button
                             className={styles.mobileNavButton}
-                            onClick={() => {
-                                onPageChange(currentPage - 1);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
+                            onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
                         >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            <span>Předchozí</span>
                         </button>
+                        <div className={styles.pageIndicator}>
+                            {currentPage}/{totalPages}
+                        </div>
                         <button
                             className={styles.mobileNavButton}
-                            onClick={() => {
-                                onPageChange(currentPage + 1);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
+                            onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
                         >
-                            <span>Další</span>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="m9 18 6-6-6-6" />
                             </svg>

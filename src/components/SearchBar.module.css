@@ -21,9 +21,8 @@
 }
 
 .aiMode .searchWrapper {
-  background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%);
+  background: #e8f2ff;
   border-color: #007aff;
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
 }
 
 .searchWrapper:focus-within {
@@ -31,8 +30,7 @@
 }
 
 .aiMode .searchWrapper:focus-within {
-  background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%);
-  box-shadow: 0 6px 20px rgba(0, 122, 255, 0.2);
+  background: #e8f2ff;
 }
 
 .icon {
@@ -81,7 +79,6 @@
 
 .aiSearchButton:hover:not(:disabled) {
   background: #0056b3;
-  transform: scale(1.05);
 }
 
 .aiSearchButton:disabled {
@@ -135,14 +132,13 @@
 }
 
 .aiToggle.active {
-  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  background: #007aff;
   color: #fff;
   border-color: #007aff;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
 }
 
 .aiToggle.active:hover {
-  box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+  background: #0056b3;
 }
 
 .sparkle {

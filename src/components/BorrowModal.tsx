@@ -98,7 +98,7 @@ export function BorrowModal({ isOpen, onClose, onSubmit, itemId, itemName, avail
 
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.field}>
-                        <label htmlFor="personName">Vaše jméno (nepovinné)</label>
+                        <label htmlFor="personName">Vaše jméno</label>
                         <input
                             id="personName"
                             type="text"
@@ -126,7 +126,7 @@ export function BorrowModal({ isOpen, onClose, onSubmit, itemId, itemName, avail
 
                     {mode === 'borrow' && (
                         <div className={styles.field}>
-                            <label htmlFor="durationDays">Na jak dlouho? (dny, nepovinné)</label>
+                            <label htmlFor="durationDays">Na jak dlouho? (dny)</label>
                             <input
                                 id="durationDays"
                                 type="number"
@@ -139,7 +139,7 @@ export function BorrowModal({ isOpen, onClose, onSubmit, itemId, itemName, avail
                     )}
 
                     <div className={styles.field}>
-                        <label htmlFor="notes">Poznámka (nepovinné)</label>
+                        <label htmlFor="notes">Poznámka</label>
                         <textarea
                             id="notes"
                             value={notes}

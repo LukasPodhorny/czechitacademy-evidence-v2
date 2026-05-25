@@ -11,6 +11,7 @@ interface VectorSearchResult {
     'Množství': string | null;
     'Jednotka': string | null;
     'Poznámka': string | null;
+    image_url: string | null;
     similarity: number;
 }
 
@@ -41,6 +42,7 @@ function convertToItem(result: VectorSearchResult): Item {
         'Množství': result['Množství'],
         'Jednotka': result['Jednotka'],
         'Poznámka': result['Poznámka'],
+        image_url: result.image_url,
     };
 }
 

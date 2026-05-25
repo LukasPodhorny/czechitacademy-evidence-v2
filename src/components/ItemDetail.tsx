@@ -3,6 +3,28 @@ import styles from './ItemDetail.module.css';
 import type { Item } from '../hooks/useItems';
 import type { Transaction } from '../hooks/useTransactions';
 
+interface ImageViewerProps {
+    imageUrl: string;
+    alt: string;
+    onClose: () => void;
+}
+
+function ImageViewer({ imageUrl, alt, onClose }: ImageViewerProps) {
+    return (
+        <div className={styles.imageViewerOverlay} onClick={onClose}>
+            <div className={styles.imageViewerContent} onClick={e => e.stopPropagation()}>
+                <button className={styles.imageViewerClose} onClick={onClose}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+                <img src={imageUrl} alt={alt} className={styles.imageViewerImage} />
+            </div>
+        </div>
+    );
+}
+
 interface ItemDetailProps {
     item: Item;
     onClose: () => void;
@@ -25,6 +47,7 @@ export function ItemDetail({
     loadingTransactions
 }: ItemDetailProps) {
     const [confirmingReturn, setConfirmingReturn] = useState<number | null>(null);
+    const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
     const name = item['Název'] || 'Neznámý název';
     const category = item['Kategorie'] || '';
     const sku = item['ID / SKU'] || '';
@@ -82,6 +105,15 @@ export function ItemDetail({
                             alt={name}
                             className={styles.detailImage}
                         />
+                        <button
+                            className={styles.imageInspectButton}
+                            onClick={() => setIsImageViewerOpen(true)}
+                            title="Zvětšit obrázek"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                            </svg>
+                        </button>
                     </div>
                 ) : (
                     <div className={styles.noImageSection}>
@@ -263,6 +295,14 @@ export function ItemDetail({
                     )}
                 </div>
             </div>
+
+            {isImageViewerOpen && imageUrl && (
+                <ImageViewer
+                    imageUrl={imageUrl}
+                    alt={name}
+                    onClose={() => setIsImageViewerOpen(false)}
+                />
+            )}
         </div>
     );
 }
