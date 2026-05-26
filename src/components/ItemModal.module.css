@@ -684,3 +684,61 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* New Category Input Styles */
+.newCategoryInput {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.newCategoryInput input {
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+
+.newCategoryInput input:focus {
+  border-color: #007aff;
+}
+
+.newCategoryButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.addCategoryBtn,
+.cancelCategoryBtn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  border: none;
+}
+
+.addCategoryBtn {
+  background: #007aff;
+  color: #fff;
+}
+
+.addCategoryBtn:hover {
+  opacity: 0.9;
+}
+
+.cancelCategoryBtn {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.cancelCategoryBtn:hover {
+  background: #f5f5f5;
+}

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useItems } from './hooks/useItems';
+import { useCategories } from './hooks/useCategories';
 import { useVectorSearch } from './hooks/useVectorSearch';
 import { useTransactions, type CreateTransactionData } from './hooks/useTransactions';
 import { searchItems, getUniqueCategories } from './utils/search';
@@ -17,6 +18,16 @@ const ITEMS_PER_PAGE = 16;
 
 function App() {
   const { items, loading, error, refreshItems, addItem, updateItem, deleteItem } = useItems();
+  const {
+    categories: categoryObjects,
+    categoryNames,
+    loading: categoriesLoading,
+    error: categoriesError,
+    refreshCategories,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+  } = useCategories();
   const {
     results: aiResults,
     loading: aiLoading,
@@ -52,7 +63,20 @@ function App() {
     }
   }, [viewingItem, fetchTransactions]);
 
-  const categories = useMemo(() => getUniqueCategories(items), [items]);
+  // Combine categories from the database with any categories from items that might not be in the database yet
+  const categories = useMemo(() => {
+    const dbCategoryNames = new Set(categoryNames);
+    const itemCategoryNames = getUniqueCategories(items);
+
+    // Add any item categories that aren't in the database yet
+    itemCategoryNames.forEach(cat => {
+      if (!dbCategoryNames.has(cat)) {
+        dbCategoryNames.add(cat);
+      }
+    });
+
+    return Array.from(dbCategoryNames).sort();
+  }, [categoryNames, items]);
 
   // Filter items
   const filteredItems = useMemo(() => {
@@ -258,14 +282,19 @@ function App() {
         onDelete={editingItem ? handleDeleteItem : undefined}
         item={editingItem}
         categories={categories}
+        onAddCategory={addCategory}
       />
 
       <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
-        categories={categories}
+        categories={categoryObjects}
+        categoryNames={categories}
         selectedCategories={selectedCategories}
         onApply={handleApplyFilters}
+        onAddCategory={addCategory}
+        onUpdateCategory={updateCategory}
+        onDeleteCategory={deleteCategory}
       />
 
       {viewingItem && (

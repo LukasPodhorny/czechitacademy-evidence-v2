@@ -11,6 +11,7 @@ interface ItemModalProps {
     onDelete?: () => void;
     item?: Item | null;
     categories: string[];
+    onAddCategory?: (name: string) => Promise<void>;
 }
 
 const emptyItem: Partial<Item> = {
@@ -35,7 +36,7 @@ const compressionOptions = {
     fileType: 'image/jpeg',  // Convert to JPEG for better compression
 };
 
-export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories }: ItemModalProps) {
+export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories, onAddCategory }: ItemModalProps) {
     const [formData, setFormData] = useState<Partial<Item>>(emptyItem);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -44,6 +45,8 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
     const [isUploading, setIsUploading] = useState(false);
     const [isCompressing, setIsCompressing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+    const [newCategory, setNewCategory] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // AI Recognition states
@@ -569,16 +572,64 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
 
                     <div className={styles.field}>
                         <label>Kategorie <span className={styles.required}>*</span></label>
-                        <select
-                            value={formData['Kategorie'] || ''}
-                            onChange={e => handleChange('Kategorie', e.target.value)}
-                            required
-                        >
-                            <option value="">Vyberte kategorii</option>
-                            {categories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                        </select>
+                        {!isAddingNewCategory ? (
+                            <select
+                                value={formData['Kategorie'] || ''}
+                                onChange={e => {
+                                    if (e.target.value === '__new__') {
+                                        setIsAddingNewCategory(true);
+                                    } else {
+                                        handleChange('Kategorie', e.target.value);
+                                    }
+                                }}
+                                required
+                            >
+                                <option value="">Vyberte kategorii</option>
+                                {categories.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                                <option value="__new__">+ Přidat novou kategorii</option>
+                            </select>
+                        ) : (
+                            <div className={styles.newCategoryInput}>
+                                <input
+                                    type="text"
+                                    value={newCategory}
+                                    onChange={e => setNewCategory(e.target.value)}
+                                    placeholder="Zadejte název kategorie"
+                                    autoFocus
+                                />
+                                <div className={styles.newCategoryButtons}>
+                                    <button
+                                        type="button"
+                                        className={styles.addCategoryBtn}
+                                        onClick={async () => {
+                                            if (newCategory.trim()) {
+                                                // Save to database if callback provided
+                                                if (onAddCategory) {
+                                                    await onAddCategory(newCategory.trim());
+                                                }
+                                                handleChange('Kategorie', newCategory.trim());
+                                                setIsAddingNewCategory(false);
+                                                setNewCategory('');
+                                            }
+                                        }}
+                                    >
+                                        Přidat
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.cancelCategoryBtn}
+                                        onClick={() => {
+                                            setIsAddingNewCategory(false);
+                                            setNewCategory('');
+                                        }}
+                                    >
+                                        Zrušit
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className={styles.field}>
