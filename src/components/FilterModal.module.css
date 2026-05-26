@@ -28,6 +28,10 @@
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 @media (min-width: 640px) {
@@ -35,6 +39,10 @@
     border-radius: 16px;
     max-width: 480px;
     max-height: 600px;
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
   }
 }
 
