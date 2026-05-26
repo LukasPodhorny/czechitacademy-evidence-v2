@@ -21,9 +21,6 @@ function App() {
   const {
     categories: categoryObjects,
     categoryNames,
-    loading: categoriesLoading,
-    error: categoriesError,
-    refreshCategories,
     addCategory,
     updateCategory,
     deleteCategory,

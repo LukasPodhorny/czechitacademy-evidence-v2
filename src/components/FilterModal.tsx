@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './FilterModal.module.css';
 import type { Category } from '../hooks/useCategories';
 
