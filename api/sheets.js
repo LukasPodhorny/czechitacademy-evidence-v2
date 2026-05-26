@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         // GET - Fetch all items from Supabase
         if (req.method === 'GET') {
             const response = await fetch(
-                `${SUPABASE_URL}/rest/v1/Evidence?select=*&order=id.asc`,
+                `${SUPABASE_URL}/rest/v1/Evidence?select=*&order=id.desc`,
                 {
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,

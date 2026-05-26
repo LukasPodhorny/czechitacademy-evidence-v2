@@ -192,6 +192,11 @@ export function ItemModal({ isOpen, onClose, onSave, onDelete, item, categories 
     };
 
     const uploadImage = async (file: File): Promise<string> => {
+        // Check if environment variables are configured
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            throw new Error('Missing Supabase configuration. Please check environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel dashboard.');
+        }
+
         const fileExt = 'jpg'; // Always save as jpg after compression
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `parts/${fileName}`;
