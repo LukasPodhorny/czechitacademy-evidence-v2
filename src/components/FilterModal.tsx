@@ -337,7 +337,7 @@ export function FilterModal({
                         className={styles.clearButton}
                         onClick={handleClearAll}
                     >
-                        Vymazat vše
+                        Zrušit výběr
                     </button>
                     <button
                         type="button"
